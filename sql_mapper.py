@@ -1,13 +1,14 @@
 from sqlalchemy import create_engine, Column, DateTime, String
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine('sqlite:///contract_opportunities.db', echo = True)
+engine = create_engine('sqlite:///contract_opportunities.db', echo = False)
 Base = declarative_base()
 
 class Contract_Opportunity(Base):
     __tablename__ = 'ContractOpportunities'
 
-    # Id = Column(Integer, primary_key=True)
+    # the values of some numeric and datetime columns do not have a consistant format, e.g. the Award column can have values with and without the $ prefix
+    # so all the columns are treated as string for now.
     NoticeId = Column(String, primary_key=True)
     Title = Column(String)
     SolNo  = Column(String)
@@ -64,7 +65,7 @@ class sql_mapper():
     Session = sessionmaker(bind = engine)
     session = Session()
 
-    def dataframe_row_to_contract_opportunity(self, row):
+    def __convert_df_row_to_contract_opportunity_object(self, row) -> Contract_Opportunity:
         co = Contract_Opportunity(
             NoticeId = row['NoticeId'],
             Title = row['Title'],
@@ -121,6 +122,6 @@ class sql_mapper():
 
         df = load_contract_opportunities_archived_data(years)
         if (len(df) > 0):
-            data_to_save = [self.dataframe_row_to_contract_opportunity(row) for index, row in df.iterrows()]
+            data_to_save = [self.__convert_df_row_to_contract_opportunity_object(row) for index, row in df.iterrows()]
             self.session.add_all(data_to_save)
             self.session.commit()
